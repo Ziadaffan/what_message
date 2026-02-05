@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { Search, Plus } from 'lucide-react';
 import UserAvatar from './UserAvatar';
 import { useSearchUsers, useSendFriendRequest } from '../../hooks/useSearch';
+import { useSocket } from '../../context/SocketContext';
 
 const UserSearch = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const { data: searchResults = [] } = useSearchUsers(searchTerm);
   const sendRequestMutation = useSendFriendRequest();
+  const {socket} = useSocket();
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
@@ -15,11 +17,12 @@ const UserSearch = () => {
   const handleSendRequest = (userId) => {
       sendRequestMutation.mutate(userId, {
           onSuccess: () => {
+              socket.emit('friend_request_sent', {receiverId: userId});
               alert('Request sent!');
               setSearchTerm('');
           },
           onError: (err) => {
-              alert(err.response?.data?.error || 'Error sending request');
+              alert(err.response.data.message);
           }
       });
   };

@@ -1,10 +1,11 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import api from '../api/axios';
+import { decodeToken } from '../utils/jwt.utils';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')));
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -12,39 +13,52 @@ export const AuthProvider = ({ children }) => {
       const token = localStorage.getItem('token');
       if (token && !user) {
         try {
-          const res = await api.get('/api/users/me');
-          setUser(res.data);
-          localStorage.setItem('user', JSON.stringify(res.data));
+          const decodedToken = decodeToken(token);
+          setUser(decodedToken);
         } catch (err) {
           localStorage.removeItem('token');
-          localStorage.removeItem('user');
         }
       }
       setLoading(false);
     };
     initAuth();
-  }, [user]);
+  }, []);
 
   const login = async (email, password) => {
-    const res = await api.post('/api/auth/login', { email, password });
-    localStorage.setItem('token', res.data.token);
-    localStorage.setItem('user', JSON.stringify(res.data));
-    setUser(res.data);
-    return res.data;
+    try {
+      const res = await api.post('/api/auth/login', { email, password });
+      localStorage.setItem('token', res.data.token);
+      const token = res.data.token;
+      const decodedToken = decodeToken(token);
+      setUser(decodedToken);
+      return res.data;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   };
 
   const register = async (username, email, password) => {
-    const res = await api.post('/api/auth/register', { username, email, password });
-    localStorage.setItem('token', res.data.token);
-    localStorage.setItem('user', JSON.stringify(res.data));
-    setUser(res.data);
-    return res.data;
+    try {
+      const res = await api.post('/api/auth/register', { username, email, password });
+      localStorage.setItem('token', res.data.token);
+      const token = res.data.token;
+      const decodedToken = decodeToken(token);
+      setUser(decodedToken);
+      return res.data;
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
+    try {
+      localStorage.removeItem('token');
+      setUser(null);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   return (

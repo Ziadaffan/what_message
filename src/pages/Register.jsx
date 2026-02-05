@@ -15,8 +15,13 @@ const Register = () => {
     try {
       await register(formData.username, formData.email, formData.password);
       navigate('/');
-    } catch (err) {
-      setError(err.response?.data?.error || 'Failed to register');
+    } catch (err) {      
+      if(err.response.status === 400){
+        setError('User already exists');
+      }
+      else{
+        setError('Failed to register');
+      }
     }
   };
 

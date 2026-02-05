@@ -16,7 +16,12 @@ const Login = () => {
       await login(formData.email, formData.password);
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to login');
+      if(err.response.status === 401){
+        setError('Invalid credentials');
+      }
+      else{
+        setError('Failed to login');
+      }
     }
   };
 

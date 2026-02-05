@@ -16,30 +16,43 @@ const ChatWindow = ({ selectedChat }) => {
   const queryClient = useQueryClient();
   const messagesEndRef = useRef(null);
 
-  const friendId = selectedChat?.friend?.user?.id;
-  const { data: messages = [] } = useMessageHistory(friendId);
+  const getFriendId = () => {
+    if (!selectedChat) return null;
+    return selectedChat.friendId || selectedChat.friend?.user?.id || selectedChat.friend?.id;
+  };
+
+  const friendId = getFriendId();
+  const friend = selectedChat?.friend?.user || selectedChat?.friend;
+
+  const { data: messages = [], isLoading } = useMessageHistory(friendId);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
-    if(selectedChat) {
-      socket.emit('mark_read', {
-        chatId: selectedChat.id,
-        receiverId: friendId,
-      });
-    }
 
-  }, [messages, selectedChat, socket, user, friendId]);
 
   useEffect(() => {
-    if (!socket || !selectedChat) return;
+    if (!socket || !selectedChat || !friendId) return;
 
     const handleReceiveMessage = (message) => {
       if (message.senderId === friendId || message.receiverId === friendId) {
         queryClient.setQueryData(['messages', friendId], (old) => {
-           if (!old) return [message];
-           if (old.find(m => m.id === message.id)) return old;
-           return [...old, message];
+          if (!old) return [message];
+          
+          const existingOptimisticIndex = old.findIndex(m => 
+            (m.tempId && m.tempId === message.tempId) || (m.id === message.tempId)
+          );
+
+          if (existingOptimisticIndex > -1) {
+            const newMessages = [...old];
+            newMessages[existingOptimisticIndex] = message;
+            return newMessages;
+          }
+
+          if (old.find(m => m.id === message.id)) return old;
+
+          return [...old, message];
         });
       }
     };
@@ -50,64 +63,41 @@ const ChatWindow = ({ selectedChat }) => {
       }
     };
 
-    const handleMarkRead = (data) => {
-      const chatId = data.chatId || data;
-      // The event payload likely contains the ID of the user who read the messages.
-      // It might be 'senderId' (from the emit) or 'readerId'.
-      const readerId = data.readerId || data.senderId;
-      
-      console.log('Read receipt for:', chatId, 'by:', readerId);
-
-      // Only mark messages as read if the current selected chat matches 
-      // AND the person who read the messages is the friend (not self).
-      if (chatId === selectedChat.id && readerId === friendId) {
-        queryClient.setQueryData(['messages', friendId], (old) => {
-          if (!old) return old;
-          return old.map(m => ({
-            ...m,
-            isRead: true,
-          }));
-        });
-      }
-    };  
-
-    socket.on('display_typing', handleTypingStatus);
     socket.on('receive_message', handleReceiveMessage);
     socket.on('typing_status', handleTypingStatus);
-    socket.on('message_read', handleMarkRead);
 
     return () => {
       socket.off('receive_message', handleReceiveMessage);
       socket.off('typing_status', handleTypingStatus);
-      socket.off('display_typing', handleTypingStatus);
-      socket.off('message_read', handleMarkRead);
     };
   }, [socket, selectedChat, friendId, queryClient]);
 
   const handleSendMessage = (content) => {
-    if (!selectedChat || !socket) return;
+    if (!selectedChat || !socket || !friendId) return;
 
-    socket.emit('send_message', {
-      receiverId: friendId,
-      chatId: selectedChat.id,
-      content,
-    });
-
+    const tempId = uuidv4();
     const newMessage = {
-      id: uuidv4(),
+      id: tempId,
+      tempId: tempId,
       senderId: user.id,
-      receiver_id: friendId,
+      receiverId: friendId,
       content,
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
     };
 
     queryClient.setQueryData(['messages', friendId], (old) => {
       return old ? [...old, newMessage] : [newMessage];
     });
+    socket.emit('send_message', {
+      receiverId: friendId,
+      chatId: selectedChat.id,
+      content,
+      tempId,
+    });
   };
 
   const handleTyping = (status) => {
-    if (socket && selectedChat) {
+    if (socket && selectedChat && friendId) {
       socket.emit('typing', { receiverId: friendId, isTyping: status });
     }
   };
@@ -126,24 +116,38 @@ const ChatWindow = ({ selectedChat }) => {
     );
   }
 
+  if (!friend) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center text-center p-10 bg-[#efeae2]">
+        <p className="text-red-500">Error: Invalid chat data</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 flex flex-col bg-[#efeae2]">
       <ChatHeader
-        friend={selectedChat.friend}
+        friend={friend}
         online={onlineUsers.some(u => u.id === friendId || u === friendId)}
         typing={isFriendTyping}
       />
       <div className="flex-1 overflow-y-auto px-6 py-4 chat-bg">
-        <div className="flex flex-col space-y-2">
-          {messages.map((msg) => (
-            <MessageItem
-              key={msg.id}
-              message={msg}
-              isOwn={msg.senderId === user.id}
-            />
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-gray-500">Loading messages...</p>
+          </div>
+        ) : (
+          <div className="flex flex-col space-y-2">
+            {messages.map((msg) => (
+              <MessageItem
+                key={msg.id}
+                message={msg}
+                isOwn={msg.senderId === user.id}
+              />
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
       </div>
       <MessageInput onSendMessage={handleSendMessage} onTyping={handleTyping} />
     </div>

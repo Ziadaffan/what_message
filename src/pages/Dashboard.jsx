@@ -11,19 +11,23 @@ const Dashboard = () => {
   const [selectedChat, setSelectedChat] = useState(null);
   const queryClient = useQueryClient();
 
-  // Global Socket Listener for refreshing lists
   useEffect(() => {
     if (!socket) return;
 
     const handleReceiveMessage = (message) => {
-      // Refresh conversations list to show new message/unread status
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    };
+
+    const handleNewChat = (chat) => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
     };
 
     socket.on('receive_message', handleReceiveMessage);
+    socket.on('new_chat', handleNewChat);
 
     return () => {
       socket.off('receive_message', handleReceiveMessage);
+      socket.off('new_chat', handleNewChat);
     };
   }, [socket, queryClient]);
 

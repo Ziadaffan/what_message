@@ -5,19 +5,36 @@ import { useFriends } from '../../hooks/useFriends';
 import { useConversations } from '../../hooks/useChats';
 
 const FriendList = ({ onSelectChat }) => {
-  const { data: friends = [] } = useFriends();
+  const { data: friends = [], isLoading, isError, error } = useFriends();
   const { data: conversations = [] } = useConversations();
 
   const handleFriendClick = (friend) => {
-    let chat = conversations.find(c => c.friend?.user?.id === friend.id);
+    const friendId = friend.id;
+    let chat = conversations.find(c => {
+      const chatFriendId = c.friendId || c.friend?.user?.id || c.friend?.id;
+      return chatFriendId === friendId;
+    });
     if (!chat) {
-      chat = { id: uuidv4(), friend: { user: friend, id: uuidv4() } };
-      // Note: This temporary chat won't be in the conversations query cache 
-      // until a message is sent or we manually update the cache.
-      // For now, we pass it up to be set as selected.
+      chat = { id: uuidv4(), friendId, friend };
     }
     onSelectChat(chat);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-sm text-gray-500">Loading friends...</div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-sm text-red-500">Error: {error?.message || 'Failed to load friends'}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="py-2">

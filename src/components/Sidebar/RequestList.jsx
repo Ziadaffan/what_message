@@ -3,12 +3,28 @@ import UserAvatar from './UserAvatar';
 import { useFriendRequests, useRespondToRequest } from '../../hooks/useFriends';
 
 const RequestList = () => {
-  const { data: friendRequests = [] } = useFriendRequests();
+  const { data: friendRequests = [], isLoading, isError, error } = useFriendRequests();
   const respondMutation = useRespondToRequest();
 
   const handleRequest = (requestId, status) => {
     respondMutation.mutate({ requestId, status });
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-sm text-gray-500">Loading requests...</div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-sm text-red-500">Error: {error?.message || 'Failed to load requests'}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="py-2">

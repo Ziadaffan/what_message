@@ -21,9 +21,8 @@ export const useSendFriendRequest = () => {
             const res = await api.post('/api/friends/invite', { receiver_id: receiverId });
             return res.data;
         },
-        onSuccess: () => {
-            // Optionally invalidate something if needed, though search results might not change immediately
-            // but friend requests list for the 'sender' isn't really affected in the UI unless we show "pending"
+        onSuccess: (data, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['searchUsers'] });
         },
     });
 };

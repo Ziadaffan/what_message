@@ -26,6 +26,21 @@ export const SocketProvider = ({ children }) => {
       setOnlineUsers(users);
     });
 
+    newSocket.on('user_online', (userId) => {
+      setOnlineUsers((prev) => {
+        if (prev.some(u => (u.id === userId || u === userId))) {
+          return prev;
+        }
+        return [...prev, userId];
+      });
+    });
+
+    newSocket.on('user_offline', (userId) => {
+      setOnlineUsers((prev) => 
+        prev.filter(u => (u.id !== userId && u !== userId))
+      );
+    });
+
     return () => {
       newSocket.close();
     };
