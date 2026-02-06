@@ -36,15 +36,22 @@ const Dashboard = () => {
       <div className="flex h-full w-full max-w-[1600px] mx-auto bg-white shadow-lg overflow-hidden">
         
         {/* Sidebar */}
-        <Sidebar 
-          user={user} 
-          logout={logout} 
-          selectedChat={selectedChat} 
-          onSelectChat={setSelectedChat} 
-        />
+        <div className={`${selectedChat ? 'hidden sm:flex' : 'flex'} w-full sm:w-1/3 sm:min-w-[300px] sm:max-w-[450px] border-r border-gray-200`}>
+          <Sidebar 
+            user={user} 
+            logout={logout} 
+            selectedChat={selectedChat} 
+            onSelectChat={setSelectedChat} 
+          />
+        </div>
 
         {/* Chat Window */}
-        <ChatWindow selectedChat={selectedChat} />
+        <div className={`${selectedChat ? 'flex' : 'hidden sm:flex'} flex-1 flex flex-col h-full overflow-hidden`}>
+          <ChatWindow 
+            selectedChat={selectedChat} 
+            onBack={() => setSelectedChat(null)} 
+          />
+        </div>
 
       </div>
     </div>

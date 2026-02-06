@@ -9,7 +9,7 @@ import { useMessageHistory } from '../../hooks/useMessages';
 import { useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
 
-const ChatWindow = ({ selectedChat }) => {
+const ChatWindow = ({ selectedChat, onBack }) => {
   const { user } = useAuth();
   const { socket, onlineUsers } = useSocket();
   const [isFriendTyping, setIsFriendTyping] = useState(false);
@@ -135,11 +135,12 @@ const ChatWindow = ({ selectedChat }) => {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-[#efeae2]">
+    <div className="flex-1 flex flex-col bg-[#efeae2] overflow-hidden h-full">
       <ChatHeader
         friend={friend}
         online={onlineUsers.some(u => u.id === friendId || u === friendId)}
         typing={isFriendTyping}
+        onBack={onBack}
       />
       <div className="flex-1 overflow-y-auto px-6 py-4 chat-bg">
         {isLoading ? (

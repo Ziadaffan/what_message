@@ -40,7 +40,7 @@ const Sidebar = ({ user, logout, selectedChat, onSelectChat }) => {
   };
   
   return (
-    <div className="w-1/3 min-w-[300px] max-w-[450px] border-r border-gray-200 flex flex-col">
+    <div className="flex-1 flex flex-col h-full overflow-hidden">
       {/* Sidebar Header */}
       <div className="h-20 bg-[#f0f2f5] border-b border-gray-200 px-4 flex items-center justify-between">
         <div className="flex flex-col items-center mr-4">
