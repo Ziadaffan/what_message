@@ -2,10 +2,17 @@ import React from 'react';
 import ConversationItem from './ConversationItem';
 import { useConversations } from '../../hooks/useChats';
 import { useSocket } from '../../context/SocketContext';
+import { useState } from 'react';
 
 const ChatList = ({ selectedChat, onSelectChat }) => {
   const { data: conversations = [], isLoading, isError, error } = useConversations();
-  const { onlineUsers } = useSocket();
+  const { onlineUsers, socket } = useSocket();
+  const handleOnSelectChat = (chat) => {
+    if (socket) {
+      socket.emit('read_messages', { chatId: chat.id });
+    }
+    onSelectChat(chat);
+  };
 
   const getFriendId = (chat) => {
     return chat.friendId || chat.friend?.user?.id || chat.friend?.id;
@@ -47,7 +54,7 @@ const ChatList = ({ selectedChat, onSelectChat }) => {
             key={chat.id}
             chat={chat}
             active={selectedChat?.id === chat.id}
-            onClick={() => onSelectChat(chat)}
+            onClick={() => handleOnSelectChat(chat)}
             online={onlineUsers.some(u => (u.id === friendId || u === friendId))}
           />
         );

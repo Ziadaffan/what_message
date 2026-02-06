@@ -30,6 +30,16 @@ const ChatWindow = ({ selectedChat }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  useEffect(() => {
+    if (socket && selectedChat) {
+      socket.emit('join_chat', { chatId: selectedChat.id });
+      
+      return () => {
+        socket.emit('leave_chat', { chatId: selectedChat.id });
+      };
+    }
+  }, [socket, selectedChat]);
+
 
 
   useEffect(() => {
@@ -143,6 +153,7 @@ const ChatWindow = ({ selectedChat }) => {
                 key={msg.id}
                 message={msg}
                 isOwn={msg.senderId === user.id}
+                isRead={msg.isRead}
               />
             ))}
             <div ref={messagesEndRef} />
