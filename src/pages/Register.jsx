@@ -7,12 +7,14 @@ const Register = () => {
   const [formData, setFormData] = useState({ username: '', email: '', password: '' });
   const [error, setError] = useState('');
   const { register } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     try {
+      setIsLoading(true);
       await register(formData.username, formData.email, formData.password);
       navigate('/');
     } catch (err) {      
@@ -22,6 +24,9 @@ const Register = () => {
       else{
         setError('Failed to register');
       }
+    }
+    finally {
+      setIsLoading(false);
     }
   };
 
@@ -79,10 +84,11 @@ const Register = () => {
           </div>
 
           <button
+            disabled={isLoading}
             type="submit"
             className="w-full bg-whatsapp-teal hover:bg-whatsapp-dark text-white font-semibold py-2 rounded-md transition duration-200"
           >
-            Create Account
+            {isLoading ? 'Registering...' : 'Register'}
           </button>
         </form>
 

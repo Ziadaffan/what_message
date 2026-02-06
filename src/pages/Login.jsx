@@ -7,12 +7,14 @@ const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const { login } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     try {
+      setIsLoading(true);
       await login(formData.email, formData.password);
       navigate('/');
     } catch (err) {
@@ -22,6 +24,9 @@ const Login = () => {
       else{
         setError('Failed to login');
       }
+    }
+    finally {
+      setIsLoading(false);
     }
   };
 
@@ -65,10 +70,11 @@ const Login = () => {
           </div>
 
           <button
+            disabled={isLoading}
             type="submit"
             className="w-full bg-whatsapp-teal hover:bg-whatsapp-dark text-white font-semibold py-2 rounded-md transition duration-200"
           >
-            Log In
+            {isLoading ? 'Logging in...' : 'Log In'}
           </button>
         </form>
 

@@ -6,6 +6,7 @@ import { useSocket } from '../../context/SocketContext';
 
 const UserSearch = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [sendingTo, setSendingTo] = useState(null);
   const { data: searchResults = [] } = useSearchUsers(searchTerm);
   const sendRequestMutation = useSendFriendRequest();
   const {socket} = useSocket();
@@ -15,14 +16,17 @@ const UserSearch = () => {
   };
 
   const handleSendRequest = (userId) => {
+      setSendingTo(userId);
       sendRequestMutation.mutate(userId, {
           onSuccess: () => {
               socket.emit('friend_request_sent', {receiverId: userId});
               alert('Request sent!');
               setSearchTerm('');
+              setSendingTo(null); 
           },
           onError: (err) => {
               alert(err.response.data.message);
+              setSendingTo(null); 
           }
       });
   };
@@ -55,8 +59,9 @@ const UserSearch = () => {
                 <button
                 onClick={() => handleSendRequest(u.id)}
                 className="bg-whatsapp-teal text-white p-1 rounded-md"
+                disabled={sendingTo === u.id}
                 >
-                <Plus size={16} />
+                {sendingTo === u.id ? 'Sending...' : <Plus size={16} />}
                 </button>
             </div>
             ))}
